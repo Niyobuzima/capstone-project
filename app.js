@@ -21,7 +21,8 @@ const options = {
      },
      servers: [
        {
-         url: 'http://localhost:3000'
+         url: 'http://localhost:3000',
+         url: 'https://niyobuzima-portfolio.onrender.com'
        }
      ],
      components: {
@@ -60,11 +61,11 @@ const options = {
   }
  };
  
-
+ console.log(options);
 
 const specs = swaggerJS(options)
 
-//middleware
+middleware
 app.get('/api-docs.json', (req, res) => {
    res.setHeader('Content-Type', 'application/json');
    res.send(specs);
