@@ -54,7 +54,10 @@ const options = {
        },
      },
    },
-   apis: ['./routes/*.js']
+   apis: ['./routes/*.js'],
+   yaml: {
+    keepCstNodes: true
+  }
  };
  
 
