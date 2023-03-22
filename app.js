@@ -65,7 +65,8 @@ const options = {
 
 const specs = swaggerJS(options)
 
-middleware
+// middleware
+
 app.get('/api-docs.json', (req, res) => {
    res.setHeader('Content-Type', 'application/json');
    res.send(specs);
