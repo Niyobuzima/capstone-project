@@ -5,6 +5,9 @@ require('dotenv/config')
 const body_parser = require('body-parser')
 const swaggerUI = require('swagger-ui-express')
 const swaggerJS = require('swagger-jsdoc')
+const postRoute = require('./routes/post')
+const authRoutes = require('./routes/auth-routes')
+const passportSetup  = require('./config/passport-setup')
 
 //swagger documentation
 
@@ -72,10 +75,12 @@ app.get('/api-docs.json', (req, res) => {
    res.send(specs);
  });
 
-app.use(body_parser.json())
-const postRoute = require('./routes/post')
+app.use(body_parser.json());
 
-app.use('/posts', postRoute)
+//setup routes
+
+app.use('/auth', authRoutes);
+app.use('/posts', postRoute);
 
 app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(specs))
 //connect to mongodb
