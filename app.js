@@ -1,0 +1,123 @@
+const express = require('express');
+const app = express();
+const mongoose = require('mongoose')
+require('dotenv/config')
+const body_parser = require('body-parser')
+const swaggerUI = require('swagger-ui-express')
+const swaggerJS = require('swagger-jsdoc')
+const postRoute = require('./routes/post')
+const authRoutes = require('./routes/auth-routes')
+const profileRoutes = require('./routes/userprofile-routes')
+const passportSetup  = require('./config/passport-setup')
+const keys = require('./config/keys')
+const cookieSession = require('cookie-session')
+const passport = require('passport')
+//swagger documentation
+
+const options = {
+   definition: {
+     openapi: '3.0.0',
+     info: {
+       title: 'My Portfolio API',
+       version: '1.0.0',
+       description: 'API for managing blog posts in my portfolio website',
+       contact: {
+         name: 'NIYOBUZIMA Theophile'
+       }
+     },
+     servers: [
+       {
+         url: 'http://localhost:4000',
+        //  url: 'https://niyobuzima-portfolio.onrender.com'
+       }
+     ],
+     components: {
+       schemas: {
+         Blog: {
+           type: 'object',
+           properties: {
+             title: { type: 'string' },
+             body: { type: 'string' },
+             snippet: { type: 'string' },
+           },
+         },
+         NewBlog: {
+           type: 'object',
+           properties: {
+             title: { type: 'string' },
+             body: { type: 'string' },
+             snippet: { type: 'string' },
+           },
+           required: ['title', 'body', 'snippet'],
+         },
+         BlogUpdate: {
+           type: 'object',
+           properties: {
+             title: { type: 'string' },
+             body: { type: 'string' },
+             snippet: { type: 'string' },
+           },
+         },
+       },
+     },
+   },
+   apis: ['./routes/*.js'],
+   yaml: {
+    keepCstNodes: true
+  }
+ };
+ 
+ console.log(options);
+
+ 
+const specs = swaggerJS(options)
+//set up cookie-session
+app.use(cookieSession({
+
+  maxAge: 24*60*60*1000,
+  keys: [keys.session.cookieKey]
+}))
+// initialize passport
+
+app.use(passport.initialize());
+app.use(passport.session());
+// middleware
+
+app.get('/api-docs.json', (req, res) => {
+   res.setHeader('Content-Type', 'application/json');
+   res.send(specs);
+ });
+ app.use(body_parser.json({ limit: '50mb' }));
+ app.use(body_parser.urlencoded({ limit: '50mb', extended: true }));
+
+// Set up CORS middleware
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+});
+
+//setup routes
+
+app.use('/auth', authRoutes);
+app.use('/profile', profileRoutes);
+app.use('/posts', postRoute);
+
+app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(specs))
+//connect to mongodb
+
+const uri = process.env.DB_CONNECTION;
+mongoose.connect(uri,{ useNewUrlParser: true, useUnifiedTopology: true, dbName: 'TEST' })
+ .then(() => {
+    console.log('connected')
+ })
+ .catch((error) => {
+    console.log(error)
+ })
+
+ //server port
+
+app.listen(4000, () => {
+    console.log('server running')
+})
