@@ -15,11 +15,16 @@ const blogSchema = new Schema({
         type:String,
         required:true,
     },
+    thumbnail:{
+        type:String,
+    },
     date:{
         type: String,
         default : Date.now,
-    }
-
+    },
+    cloudinary_id: {
+        type: String,
+    },
 });
 
 const blog = mongoose.model('blogs',blogSchema);

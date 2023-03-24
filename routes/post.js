@@ -1,6 +1,8 @@
 const express = require('express')
 const router = express.Router()
 const blogs = require('../model/blogs')
+const cloudinary = require("../utils/cloudinary");
+const upload = require("../utils/multer");
 //swagger route
 /**
  * @swagger
@@ -78,18 +80,23 @@ router.get('/:postID', async (req,res) => {
  *             schema:
  *               $ref: '#/components/schemas/Blog'
  */
-router.post('/', async (req, res) => {
-    try {
-        const post = new blogs({
-            title: req.body.title,
-            snippet: req.body.snippet,
-            body: req.body.body
-        });
-        const savedPost = await post.save();
-        res.json(savedPost);
-    } catch (error) {
-        res.json({ message: error });
-    }
+router.post('/', upload.single('image'), async (req, res) => {
+  try {
+    const result = await cloudinary.uploader.upload(req.file.path);
+
+    const post = new blogs({
+      title: req.body.title,
+      snippet: req.body.snippet,
+      body: req.body.body,
+      thumbnail: result.secure_url,
+      cloudinary_id: result.public_id,
+    });
+
+    const savedPost = await post.save();
+    res.json(savedPost);
+  } catch (error) {
+    res.json({ message: error });
+  }
 });
 
 //UPDATE A POST
@@ -124,21 +131,31 @@ router.post('/', async (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.patch('/:postID', async (req,res) =>{
-    try {
-      const updatedPost = await blogs.updateOne(
-        {_id : req.params.postID},
-        {$set: {
+router.patch('/:postID', upload.single('image'), async (req, res) => {
+  try {
+    // Update image on Cloudinary
+    const result = await cloudinary.uploader.upload(req.file.path);
+    await cloudinary.uploader.destroy(req.body.cloudinary_id);
+
+    // Update blog post
+    const updatedPost = await blogs.updateOne(
+      { _id: req.params.postID },
+      {
+        $set: {
           title: req.body.title,
           snippet: req.body.snippet,
-          body: req.body.body
-        }}
-      );
-      res.send(updatedPost);
-    } catch (error) {
-      res.json({ message: error });
-    }
-  });
+          body: req.body.body,
+          thumbnail: result.secure_url,
+          cloudinary_id: result.public_id,
+        },
+      }
+    );
+    res.send(updatedPost);
+  } catch (error) {
+    res.json({ message: error });
+  }
+});
+
 
 
   // DELETE POST 
@@ -170,13 +187,22 @@ router.patch('/:postID', async (req,res) =>{
  *         description: Server error.
  */
 router.delete('/:postID', async (req,res) =>{
-    try{
-        const deletedPost = await blogs.deleteOne({_id: req.params.postID})
-        res.status(200).send(deletedPost)
-    }catch(error){
-        res.status(500).json({ message: error });
-    }
+  try{
+      // Find blog post to be deleted
+      const post = await blogs.findOne({_id: req.params.postID});
+
+      // Delete thumbnail image from Cloudinary
+      await cloudinary.uploader.destroy(post.cloudinary_id);
+
+      // Delete blog post
+      const deletedPost = await blogs.deleteOne({_id: req.params.postID});
+
+      res.status(200).send(deletedPost)
+  }catch(error){
+      res.status(500).json({ message: error });
+  }
 })
+
 
 
   

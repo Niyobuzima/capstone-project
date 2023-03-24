@@ -7,8 +7,11 @@ const swaggerUI = require('swagger-ui-express')
 const swaggerJS = require('swagger-jsdoc')
 const postRoute = require('./routes/post')
 const authRoutes = require('./routes/auth-routes')
+const profileRoutes = require('./routes/userprofile-routes')
 const passportSetup  = require('./config/passport-setup')
-
+const keys = require('./config/keys')
+const cookieSession = require('cookie-session')
+const passport = require('passport')
 //swagger documentation
 
 const options = {
@@ -24,8 +27,8 @@ const options = {
      },
      servers: [
        {
-         url: 'http://localhost:3000',
-         url: 'https://niyobuzima-portfolio.onrender.com'
+         url: 'http://localhost:4000',
+        //  url: 'https://niyobuzima-portfolio.onrender.com'
        }
      ],
      components: {
@@ -66,20 +69,39 @@ const options = {
  
  console.log(options);
 
+ 
 const specs = swaggerJS(options)
+//set up cookie-session
+app.use(cookieSession({
 
+  maxAge: 24*60*60*1000,
+  keys: [keys.session.cookieKey]
+}))
+// initialize passport
+
+app.use(passport.initialize());
+app.use(passport.session());
 // middleware
 
 app.get('/api-docs.json', (req, res) => {
    res.setHeader('Content-Type', 'application/json');
    res.send(specs);
  });
+ app.use(body_parser.json({ limit: '50mb' }));
+ app.use(body_parser.urlencoded({ limit: '50mb', extended: true }));
 
-app.use(body_parser.json());
+// Set up CORS middleware
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+});
 
 //setup routes
 
 app.use('/auth', authRoutes);
+app.use('/profile', profileRoutes);
 app.use('/posts', postRoute);
 
 app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(specs))
@@ -96,6 +118,6 @@ mongoose.connect(uri,{ useNewUrlParser: true, useUnifiedTopology: true, dbName: 
 
  //server port
 
-app.listen(3000, () => {
+app.listen(4000, () => {
     console.log('server running')
 })
